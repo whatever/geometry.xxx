@@ -6605,8 +6605,6 @@ var svv =
 	  value: true
 	});
 
-	var _slicedToArray = function () { function sliceIterator(arr, i) { var _arr = []; var _n = true; var _d = false; var _e = undefined; try { for (var _i = arr[Symbol.iterator](), _s; !(_n = (_s = _i.next()).done); _n = true) { _arr.push(_s.value); if (i && _arr.length === i) break; } } catch (err) { _d = true; _e = err; } finally { try { if (!_n && _i["return"]) _i["return"](); } finally { if (_d) throw _e; } } return _arr; } return function (arr, i) { if (Array.isArray(arr)) { return arr; } else if (Symbol.iterator in Object(arr)) { return sliceIterator(arr, i); } else { throw new TypeError("Invalid attempt to destructure non-iterable instance"); } }; }();
-
 	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 
 	var _App = __webpack_require__(2);
@@ -6784,65 +6782,22 @@ var svv =
 	      var g = new THREE.Group();
 
 	      var stars = [];
+	      var starSize = 900;
+	      var STAR_COUNT = 60000;
 
-	      for (var i = 0; i < 30; i++) {
-	        var r = 9;
-	        var t = Math.random() * Math.PI * 2;
-	        var x = r * Math.cos(t);
-	        var y = r * Math.sin(t);
-	        var z = 0;
+	      for (var i = 0; i < STAR_COUNT; i++) {
+	        var r = starSize;
+
+	        var t = 2 * Math.random() - 1;
+	        var u = 2 * Math.random() - 1;
+
+	        var x = t;
+	        var y = u;
+	        var z = 2 * Math.random() - 1.0;
 	        stars.push([x, y, z]);
 	      }
 
-	      stars = [[4, 0, 0], [4, 3, 3], [7, 6, 3], [7, 3.3, -6], [4, -3, 3],
-	      //*/
-
-	      [-4, 0, 0], [-4, 3, 3], [-7, 2, 3], [-7, -6.9, 6.9]];
-
-	      var o = [];
-
-	      function linf(v) {
-	        return Math.max(Math.abs(v[0]), Math.abs(v[1]), Math.abs(v[2]));
-	      }
-
-	      stars.forEach(function (v, i) {
-	        var n = linf(v);
-
-	        var _v = _slicedToArray(v, 3),
-	            x = _v[0],
-	            y = _v[1],
-	            z = _v[2];
-
-	        x *= 3.0 / n;
-	        y *= 3.0 / n;
-	        z *= 3.0 / n;
-	        o.push([x, y, z]);
-	      });
-
-	      var size = 0.15;
-
-	      stars.forEach(function (v, i) {
-	        // Arrow
-	        var origin = new THREE.Vector3(v[0], v[1], v[2]);
-	        var dir = origin.clone().multiplyScalar(-1);
-	        var len = dir.length();
-	        dir.normalize();
-	        var h = new THREE.ArrowHelper(dir, origin, len, 0xFF55FF);
-
-	        // Point
-	        var m = new THREE.Mesh(new THREE.SphereGeometry(size, 32, 32), new THREE.MeshBasicMaterial({ color: 0x00FFFF }));
-	        m.position.set(v[0], v[1], v[2]);
-	        m.rotation.x = 2 * Math.random() * Math.PI;
-	        m.rotation.y = 2 * Math.random() * Math.PI;
-	        m.rotation.z = 2 * Math.random() * Math.PI;
-
-	        // Add
-	        g.add(m);
-	        g.add(h);
-	      });
-
-	      g.add((0, _StarrySky.sky)(stars));
-	      g.position.y += 8.0;
+	      g.add((0, _StarrySky.sky)(stars, starSize));
 
 	      return g;
 	    }
@@ -6882,7 +6837,7 @@ var svv =
 	  }, {
 	    key: 'addGrassyField',
 	    value: function addGrassyField() {
-	      this.field = new _GrassyField.GrassyField(14, 14, 9.0, 30, this.floor.f);
+	      this.field = new _GrassyField.GrassyField(80, 80, 9.0, 30, this.floor.f);
 	      this.fieldMesh = new THREE.Mesh(this.field.geometry(), this.grassMaterial);
 	      this.scene.add(this.fieldMesh);
 	    }
@@ -6989,43 +6944,26 @@ var svv =
 	      var t = +new Date() / 200.0 / 1.0;
 	      var f = Math.PI / 4.0;
 	      var r = 90;
-	      f = t / 10.0;
+	      f = t / 100.0;
 	      var x = r * Math.cos(t);
 	      var z = r * Math.sin(t);
 	      var y = params.y;
 
-	      var a = r * Math.cos(f),
+	      // ...
+	      var a = r * Math.cos(r),
 	          b = y,
-	          c = r * Math.sin(f);
+	          c = r * Math.sin(r);
 
-	      //udebugger;
-	      // console.log(this.u.time.value);
-	      /*
-	      this.sky.material.uniforms.time.value = 0.5*(Math.cos(t)+1);
-	      this.sky.material.uniforms.dir.value.x = 0.5*(Math.cos(t)+1);
-	      this.sky.material.uniforms.dir.value.y = 0.5*(Math.sin(t)+1);
-	      this.sky.material.uniforms.dir.value.z = 1.0;
-	      this.sky.material.needsUpdate = true;
-	      //*/
+	      // ...
 
-	      // Set to zero
-	      /*
-	      this.sky.material.uniforms.dir.value.x = 0.0;
-	      this.sky.material.uniforms.dir.value.y = 0.0;
-	      this.sky.material.uniforms.dir.value.z = 0.0;
-	      //
-	      this.sky.rotation.x = (+2*t) % (2*Math.PI);
-	      this.sky.rotation.y = (-2*t) % (2*Math.PI);
-	      this.sky.rotation.z = (-3*t) % (2*Math.PI);
-	      //*/
-
-	      this.sky.rotation.x = 0;
-	      this.sky.rotation.y = 0;
-	      this.sky.rotation.z = 0;
+	      var TWOPI = 2 * Math.PI;
+	      this.sky.rotation.x = f % TWOPI;
+	      this.sky.rotation.y = f % TWOPI;;
+	      this.sky.rotation.z = f % TWOPI;;
 
 	      // ...
 	      this.camera.position.set(a, b, c);
-	      this.camera.lookAt(new THREE.Vector3(0, 0, 0));
+	      this.camera.lookAt(new THREE.Vector3(0, y - 0.5 * y, 0));
 	    }
 	  }, {
 	    key: 'setupCamera',
@@ -7092,10 +7030,11 @@ var svv =
 	/**
 	 * Return a sky object
 	 */
-	function sky(stars) {
+	function sky(stars, boxSize) {
 	  try {
-	    var size = 2 * SKY_SIZE;
-	    var skyBox = new THREE.CubeGeometry(size, size, size, 1, 1, 1);
+	    console.log(boxSize);
+	    var size = 2 * boxSize;
+	    var skyBox = new THREE.CubeGeometry(boxSize, boxSize, boxSize, 1, 1, 1);
 	    var skyMat = skyMaterial(stars);
 	    var skyMesh = new THREE.Mesh(skyBox, skyMat);
 	    return skyMesh;
@@ -7147,21 +7086,19 @@ var svv =
 	  switch (i) {
 	    // X-coord dominant
 	    case 0:
-	      if (s > 0) {
-	        u = -z / n;
-	        v = y / n;
-	        face = 0;
-	      } else {
-	        u = z / n;
-	        v = y / n;
-	        face = 1;
-	      }
+	      u = -s * z / n;
+	      v = y / n;
+	      face = s > 0 ? 0 : 1;
 	      break;
 	    case 1:
-	      console.log("Y-Face");
+	      u = x / n;
+	      v = -s * z / n;
+	      face = s > 0 ? 2 : 3;
 	      break;
 	    case 2:
-	      console.log("Z-Face");
+	      u = s * x / n;
+	      v = y / n;
+	      face = s > 0 ? 4 : 5;
 	      break;
 	    default:
 	      throw "What the fuck";
@@ -7169,8 +7106,6 @@ var svv =
 
 	  u = (u + 1) / 2. * skyWidth;
 	  v = (v + 1) / 2. * skyHeight;
-
-	  // console.log("(" + x + ", " + y + ", " + z + ") => (" + u + ", " + v + ")");
 
 	  return [Math.floor(u), Math.floor(v), face];
 	}
@@ -7192,18 +7127,20 @@ var svv =
 	 * Return sky texture
 	 */
 	function skyTextures(stars) {
-	  var width = 25;
-	  var height = 25;
+	  var width = 2000;
+	  var height = width;
 	  var size = width * height;
 
 	  var data = [];
 
 	  for (var j = 0; j < 6; j++) {
+	    var r = Math.floor(Math.random() * 255);
+	    r = 0;
 	    data.push(__blank_data(width, height));
 	    for (var i = 0; i < size; i++) {
-	      data[j][4 * i + 0] = 0;
-	      data[j][4 * i + 1] = 0;
-	      data[j][4 * i + 2] = 0;
+	      data[j][4 * i + 0] = r;
+	      data[j][4 * i + 1] = r;
+	      data[j][4 * i + 2] = r;
 	      data[j][4 * i + 3] = 255;
 	    }
 	  }
@@ -7236,7 +7173,7 @@ var svv =
 	    return tex;
 	  }
 
-	  return [__texture(data[X_POSITIVE]), __texture(data[X_NEGATIVE]), t(), t(), t(), t()];
+	  return [__texture(data[X_POSITIVE]), __texture(data[X_NEGATIVE]), __texture(data[Y_POSITIVE]), __texture(data[Y_NEGATIVE]), __texture(data[Z_POSITIVE]), __texture(data[Z_NEGATIVE])];
 	}
 
 	function t() {
@@ -7272,7 +7209,7 @@ var svv =
 
 	  var textures = skyTextures(stars);
 
-	  var faceMaterials = [new THREE.MeshBasicMaterial({ map: textures[0] }), new THREE.MeshBasicMaterial({ map: textures[1] }), new THREE.MeshBasicMaterial({ map: t() }), new THREE.MeshBasicMaterial({ map: t() }), new THREE.MeshBasicMaterial({ map: t() }), new THREE.MeshBasicMaterial({ map: t() })];
+	  var faceMaterials = [new THREE.MeshBasicMaterial({ map: textures[0], side: THREE.DoubleSide }), new THREE.MeshBasicMaterial({ map: textures[1], side: THREE.DoubleSide }), new THREE.MeshBasicMaterial({ map: textures[2], side: THREE.DoubleSide }), new THREE.MeshBasicMaterial({ map: textures[3], side: THREE.DoubleSide }), new THREE.MeshBasicMaterial({ map: textures[4], side: THREE.DoubleSide }), new THREE.MeshBasicMaterial({ map: textures[5], side: THREE.DoubleSide })];
 
 	  return faceMaterials;
 	}
