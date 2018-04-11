@@ -6783,7 +6783,7 @@ var svv =
 
 	      var stars = [];
 	      var starSize = 900;
-	      var STAR_COUNT = 60000;
+	      var STAR_COUNT = 399999;
 
 	      for (var i = 0; i < STAR_COUNT; i++) {
 	        var r = starSize;
@@ -6837,7 +6837,7 @@ var svv =
 	  }, {
 	    key: 'addGrassyField',
 	    value: function addGrassyField() {
-	      this.field = new _GrassyField.GrassyField(80, 80, 9.0, 30, this.floor.f);
+	      this.field = new _GrassyField.GrassyField(20, 20, 9.0, 30, this.floor.f);
 	      this.fieldMesh = new THREE.Mesh(this.field.geometry(), this.grassMaterial);
 	      this.scene.add(this.fieldMesh);
 	    }
@@ -6944,7 +6944,7 @@ var svv =
 	      var t = +new Date() / 200.0 / 1.0;
 	      var f = Math.PI / 4.0;
 	      var r = 90;
-	      f = t / 100.0;
+	      f = t / 1000.0;
 	      var x = r * Math.cos(t);
 	      var z = r * Math.sin(t);
 	      var y = params.y;
@@ -7145,17 +7145,21 @@ var svv =
 	    }
 	  }
 
-	  function setWhite(lis, x, y) {
+	  function setWhite(lis, x, y, lum) {
+	    lum = lum || 255.0;
 	    var i = 4 * (y * height + x);
-	    lis[i + 0] = 255;
-	    lis[i + 1] = 255;
-	    lis[i + 2] = 255;
-	    lis[i + 3] = 255;
+	    lis[i + 0] = lum;
+	    lis[i + 1] = lum;
+	    lis[i + 2] = lum;
+	    lis[i + 3] = lum;
 	  }
 
 	  stars = stars || [];
 
+	  var lum = 0;
 	  stars.forEach(function (v) {
+	    lum = Math.sqrt(v[0] * v[0] + v[1] * v[1] + v[2] * v[2]);
+
 	    var _remap = remap(v, width, height),
 	        _remap2 = _slicedToArray(_remap, 3),
 	        x = _remap2[0],
@@ -7163,9 +7167,11 @@ var svv =
 	        i = _remap2[2];
 
 	    if (x >= 0 && y >= 0) {
-	      setWhite(data[i], x, y);
+	      setWhite(data[i], x, y, Math.floor(255 * lum));
 	    }
 	  });
+
+	  console.log("lum ->", Math.floor(255 * lum));
 
 	  function __texture(data) {
 	    var tex = new THREE.DataTexture(data, width, height, THREE.RGBAFormat, THREE.UnsignedByteType, THREE.UVMapping);
