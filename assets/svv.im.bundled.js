@@ -6605,6 +6605,8 @@ var svv =
 	  value: true
 	});
 
+	var _slicedToArray = function () { function sliceIterator(arr, i) { var _arr = []; var _n = true; var _d = false; var _e = undefined; try { for (var _i = arr[Symbol.iterator](), _s; !(_n = (_s = _i.next()).done); _n = true) { _arr.push(_s.value); if (i && _arr.length === i) break; } } catch (err) { _d = true; _e = err; } finally { try { if (!_n && _i["return"]) _i["return"](); } finally { if (_d) throw _e; } } return _arr; } return function (arr, i) { if (Array.isArray(arr)) { return arr; } else if (Symbol.iterator in Object(arr)) { return sliceIterator(arr, i); } else { throw new TypeError("Invalid attempt to destructure non-iterable instance"); } }; }();
+
 	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 
 	var _App = __webpack_require__(2);
@@ -6641,6 +6643,10 @@ var svv =
 
 	var _Land = __webpack_require__(31);
 
+	var _TriangleSurface = __webpack_require__(26);
+
+	var _TriangleSurface2 = _interopRequireDefault(_TriangleSurface);
+
 	function _interopRequireWildcard(obj) { if (obj && obj.__esModule) { return obj; } else { var newObj = {}; if (obj != null) { for (var key in obj) { if (Object.prototype.hasOwnProperty.call(obj, key)) newObj[key] = obj[key]; } } newObj.default = obj; return newObj; } }
 
 	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
@@ -6661,6 +6667,11 @@ var svv =
 	function stringToHex(str) {
 	  return parseInt(str.substring(1), 16);
 	}
+
+	var NORTH = new THREE.Vector3(-1, 0, 0);
+	var EAST = new THREE.Vector3(0, 0, -1);
+	var SOUTH = new THREE.Vector3(+1, 0, 0);
+	var WEST = new THREE.Vector3(0, 0, +1);
 
 	var StarfieldApp = function (_QuentinLike) {
 	  _inherits(StarfieldApp, _QuentinLike);
@@ -6728,23 +6739,27 @@ var svv =
 	      // Sky
 	      this.sky = this.getSky();
 	      this.scene.add(this.sky);
+	      this.setTheta(0.0);
 
 	      // Helper setup functions
 	      this.setupTrack();
 
 	      // Add visible components
-	      this.addFloor();
-
-	      /*
-	      for (let i=-8; i <= 8; i++) {
-	        let x = 8*i;
-	        this.addTombstone(x, 0);
-	      }
-	      //*/
-	      //
 
 	      var start = (0, _utils.getElapsedTime)();
-	      this.addGrassyField();
+	      this.fieldMesh = {};
+
+	      this.addFloor();
+
+	      // Add obelisks
+	      // console.log("Adding obelisks");
+	      this.addObelisk([-20, 0], 0xFF0000); // N
+	      this.addObelisk([0, -20], 0x00FFFF);
+	      this.addObelisk([+20, 0], 0xFF00FF);
+	      this.addObelisk([0, +20], 0x00FF00);
+	      // this.addObelisk(EAST, 0xFF00FF);
+	      // this.addObelisk(WEST, 0x00FF00);
+
 	      // console.log("Create grassy field time:", getElapsedTime()-start);
 
 	      this.force = new THREE.Vector3(0, 0, 1);
@@ -6760,17 +6775,6 @@ var svv =
 	      this.camera.position.set(0, 30, 80);
 	      this.camera.lookAt(new THREE.Vector3(0, 0, 0));
 	    }
-	  }, {
-	    key: 'getPoints',
-	    value: function getPoints(points) {
-	      var g = new THREE.Group();
-
-	      points.forEach(function (v, i) {
-	        console.log("...whatever");
-	      });
-
-	      return g;
-	    }
 
 	    /**
 	     * Return a sky [and helper objects]
@@ -6782,8 +6786,8 @@ var svv =
 	      var g = new THREE.Group();
 
 	      var stars = [];
-	      var starSize = 900;
-	      var STAR_COUNT = 399999;
+	      var starSize = 700;
+	      var STAR_COUNT = 90000;
 
 	      for (var i = 0; i < STAR_COUNT; i++) {
 	        var r = starSize;
@@ -6812,22 +6816,6 @@ var svv =
 	      this.forceArrow = new THREE.ArrowHelper(this.force, this.dest, norm(this.force), 0x000000);
 	      this.scene.add(this.forceArrow);
 	      // this.updateForceArrow();
-	    }
-
-	    /**
-	     * Update Force ArrowHelper
-	     */
-
-	  }, {
-	    key: 'updateForceArrow',
-	    value: function updateForceArrow() {
-	      this.dest = this.force.clone();
-	      this.dest.multiplyScalar(-1);
-	      this.forceArrow.setLength(norm(this.force));
-	      this.forceArrow.position.x = this.force.x;
-	      this.forceArrow.position.y = this.force.y;
-	      this.forceArrow.position.z = this.force.z;
-	      this.forceArrow.position.multiplyScalar(-1);
 	    }
 
 	    /**
@@ -6863,6 +6851,18 @@ var svv =
 	      this.fieldMesh.material = this.grassMaterial;
 	      // this.fieldMesh.material = new THREE.MeshNormalMaterial({ side: THREE.DoubleSide, });
 	    }
+
+	    // Set the theta of the sky
+
+	  }, {
+	    key: 'setTheta',
+	    value: function setTheta(theta) {
+	      this.skyTheta = theta;
+	      this.skyAxis = new THREE.Vector3(Math.cos(-theta), Math.sin(-theta), 0.0);
+	    }
+
+	    // Add a tombstone
+
 	  }, {
 	    key: 'addTombstone',
 	    value: function addTombstone(x, z) {
@@ -6879,14 +6879,9 @@ var svv =
 	      });
 	      var cube = new THREE.Mesh(geometry, material);
 	      cube.position.x = x;
-	      cube.position.y = 4;;
+	      cube.position.y = 0;
 	      cube.position.z = z;
-	      // cube.rotation.y = Math.PI/4;
-	      // this.scene.add(cube);
 	    }
-	  }, {
-	    key: 'addTombstones',
-	    value: function addTombstones() {}
 
 	    // Just draw a simple floor
 
@@ -6912,20 +6907,50 @@ var svv =
 	      }();
 
 	      this.floor = new _Land.Land({
-	        height: 50,
-	        width: 50,
+	        height: 900,
+	        width: 900,
 	        floor: _abc
 	      });
 
-	      // this.addGrid();
+	      var floorMat = new THREE.MeshBasicMaterial({
+	        // color: 0x2194CE,
+	        wireframe: true,
+	        color: 0x334444
+	      });
+
 	      // let geo = this.floor.getMesh();
 
-	      // this.scene.add(new THREE.Mesh(geo, mat));
+	      var surface = new _TriangleSurface2.default(this.floor.f, 1, 900, 900);
+
+	      this.scene.add(new THREE.Mesh(surface.build(), floorMat));
+	      // 
+	      this.addGrassyField();
 	    }
+	  }, {
+	    key: 'addObelisk',
+	    value: function addObelisk(_ref2, c) {
+	      var _ref3 = _slicedToArray(_ref2, 2),
+	          x = _ref3[0],
+	          z = _ref3[1];
+
+	      var geo = new THREE.BoxGeometry(1, 5, 1);
+	      var mat = new THREE.MeshBasicMaterial({ color: c });
+	      var mesh = new THREE.Mesh(geo, mat);
+	      var y = this.floor.f(x, z);
+	      var pos = new THREE.Vector3(x, y, z);
+	      mesh.position.set(pos.x, pos.y + 2.5, pos.z);
+	      mesh.rotation.y = Math.PI / 4.0;
+	      this.scene.add(mesh);
+	    }
+
+	    /**
+	     * What is this?
+	     */
+
 	  }, {
 	    key: 'addGrid',
 	    value: function addGrid() {
-	      var mat = new THREE.LineBasicMaterial({ color: 0xB7B7BA });
+	      var mat = new THREE.LineBasicMaterial({ color: 0x999999 });
 	      var VALS = 100;
 	      for (var i = -VALS; i <= VALS; i++) {
 	        var geo = new THREE.Geometry();
@@ -6944,26 +6969,33 @@ var svv =
 	      var t = +new Date() / 200.0 / 1.0;
 	      var f = Math.PI / 4.0;
 	      var r = 90;
-	      f = t / 1000.0;
-	      var x = r * Math.cos(t);
-	      var z = r * Math.sin(t);
+	      f = t / 100.0;
+	      var x = r * Math.cos(f);
+	      var z = r * Math.sin(f);
 	      var y = params.y;
 
 	      // ...
-	      var a = r * Math.cos(r),
+	      var a = x,
 	          b = y,
-	          c = r * Math.sin(r);
+	          c = z;
 
 	      // ...
 
 	      var TWOPI = 2 * Math.PI;
-	      this.sky.rotation.x = f % TWOPI;
-	      this.sky.rotation.y = f % TWOPI;;
-	      this.sky.rotation.z = f % TWOPI;;
+	      var theta = f % 2 * Math.PI;
+	      this.sky.setRotationFromAxisAngle(this.skyAxis, 0.0);
 
 	      // ...
 	      this.camera.position.set(a, b, c);
-	      this.camera.lookAt(new THREE.Vector3(0, y - 0.5 * y, 0));
+	      this.camera.lookAt(0, 0, 0);
+
+	      var pos = SOUTH.clone();
+	      pos.multiplyScalar(20.0);
+	      pos.y = y;
+	      // this.camera.lookAt(pos);
+
+	      // Move skybox around camera position
+	      this.sky.position.set(this.camera.position.x, this.camera.position.y, this.camera.position.z);
 	    }
 	  }, {
 	    key: 'setupCamera',
@@ -7033,9 +7065,9 @@ var svv =
 	function sky(stars, boxSize) {
 	  try {
 	    console.log(boxSize);
-	    var size = 2 * boxSize;
+	    var size = Math.floor(3 * boxSize);
 	    var skyBox = new THREE.CubeGeometry(boxSize, boxSize, boxSize, 1, 1, 1);
-	    var skyMat = skyMaterial(stars);
+	    var skyMat = skyMaterial(stars, size);
 	    var skyMesh = new THREE.Mesh(skyBox, skyMat);
 	    return skyMesh;
 	  } catch (err) {
@@ -7126,9 +7158,7 @@ var svv =
 	/**
 	 * Return sky texture
 	 */
-	function skyTextures(stars) {
-	  var width = 2000;
-	  var height = width;
+	function skyTextures(stars, width, height) {
 	  var size = width * height;
 
 	  var data = [];
@@ -7171,8 +7201,6 @@ var svv =
 	    }
 	  });
 
-	  console.log("lum ->", Math.floor(255 * lum));
-
 	  function __texture(data) {
 	    var tex = new THREE.DataTexture(data, width, height, THREE.RGBAFormat, THREE.UnsignedByteType, THREE.UVMapping);
 	    tex.needsUpdate = true;
@@ -7182,38 +7210,20 @@ var svv =
 	  return [__texture(data[X_POSITIVE]), __texture(data[X_NEGATIVE]), __texture(data[Y_POSITIVE]), __texture(data[Y_NEGATIVE]), __texture(data[Z_POSITIVE]), __texture(data[Z_NEGATIVE])];
 	}
 
-	function t() {
-	  var len = 4;
-	  var width = Math.pow(2, len);
-	  var height = Math.pow(2, len);
-	  var size = width * height;
-	  var data = new Uint8Array(4 * size);
-
-	  for (var i = 0; i < size; i++) {
-	    data[4 * i + 0] = 15;
-	    data[4 * i + 1] = 55;
-	    data[4 * i + 2] = 55;
-	    data[4 * i + 3] = 255;
-	  }
-
-	  var tex = new THREE.DataTexture(data, width, height, THREE.RGBAFormat, THREE.UnsignedByteType, THREE.UVMapping);
-
-	  tex.needsUpdate = true;
-
-	  return tex;
-	}
-
 	/**
 	 * Return a sky material
 	 */
-	function skyMaterial(stars) {
+	function skyMaterial(stars, size) {
+
+	  var width = size;
+	  var height = size;
 
 	  var uniforms = {
 	    time: { value: 1.0 },
 	    dir: { value: new THREE.Vector3(0.0, 0.0, 1.0), type: 'v3' }
 	  };
 
-	  var textures = skyTextures(stars);
+	  var textures = skyTextures(stars, width, height);
 
 	  var faceMaterials = [new THREE.MeshBasicMaterial({ map: textures[0], side: THREE.DoubleSide }), new THREE.MeshBasicMaterial({ map: textures[1], side: THREE.DoubleSide }), new THREE.MeshBasicMaterial({ map: textures[2], side: THREE.DoubleSide }), new THREE.MeshBasicMaterial({ map: textures[3], side: THREE.DoubleSide }), new THREE.MeshBasicMaterial({ map: textures[4], side: THREE.DoubleSide }), new THREE.MeshBasicMaterial({ map: textures[5], side: THREE.DoubleSide })];
 
