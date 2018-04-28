@@ -168,8 +168,13 @@ var svv =
 
 	var _Subtitles = __webpack_require__(62);
 
+	var _chatBox = __webpack_require__(63);
+
 	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
+	// Exports
+
+	// ...
 	exports.CircleApp = _CircleApp2.default;
 	exports.CircleGridApp = _CircleGridApp2.default;
 	exports.CouchApp = _CouchApp2.default;
@@ -202,7 +207,7 @@ var svv =
 	exports.Subtitle = _Subtitles.Subtitle;
 	exports.SubtitleScript = _Subtitles.SubtitleScript;
 
-	// ...
+	// Layout stuff
 
 /***/ }),
 /* 1 */
@@ -6738,7 +6743,7 @@ var svv =
 
 	      // Sky
 	      this.sky = this.getSky();
-	      this.scene.add(this.sky);
+	      this.scene.add(this.sky.sky);
 	      this.setTheta(0.0);
 
 	      // Helper setup functions
@@ -6801,9 +6806,7 @@ var svv =
 	        stars.push([x, y, z]);
 	      }
 
-	      g.add((0, _StarrySky.sky)(stars, starSize));
-
-	      return g;
+	      return new _StarrySky.StarrySky(stars, starSize);
 	    }
 
 	    /**
@@ -6846,7 +6849,7 @@ var svv =
 	        reflectivity: reflectivity,
 	        // shading: THREE.SmoothShading,
 	        flatShading: true,
-	        side: THREE.DoubleSide
+	        side: THREE.BackSide
 	      });
 	      this.fieldMesh.material = this.grassMaterial;
 	      // this.fieldMesh.material = new THREE.MeshNormalMaterial({ side: THREE.DoubleSide, });
@@ -6912,10 +6915,27 @@ var svv =
 	        floor: _abc
 	      });
 
-	      var floorMat = new THREE.MeshBasicMaterial({
-	        // color: 0x2194CE,
-	        wireframe: true,
-	        color: 0x334444
+	      console.log(this.sky.textures);
+
+	      var images = [];
+
+	      this.sky.textures.forEach(function (v, i) {
+	        images.push(v.image);
+	      });
+
+	      var cubeTex = new THREE.CubeTexture(images, THREE.CubeReflectionMapping);
+	      cubeTex.wrapS = THREE.RepeatWrapping;
+	      cubeTex.wrapT = THREE.RepeatWrapping;
+	      cubeTex.repeat.set(4, 4);
+
+	      this.cubeCamera = new THREE.CubeCamera(100, 1000, Math.pow(2, 11));
+	      this.scene.add(this.cubeCamera);
+
+	      var floorMat = new THREE.MeshPhongMaterial({
+	        color: 0xCCCCCC,
+	        envMap: this.cubeCamera.renderTarget,
+	        reflectivity: 0.95,
+	        side: THREE.BackSide
 	      });
 
 	      // let geo = this.floor.getMesh();
@@ -6923,6 +6943,11 @@ var svv =
 	      var surface = new _TriangleSurface2.default(this.floor.f, 1, 900, 900);
 
 	      this.scene.add(new THREE.Mesh(surface.build(), floorMat));
+	      var geo = new THREE.BoxGeometry(1, 5, 1);
+
+	      this.mirrorBox = new THREE.Mesh(geo, floorMat);
+	      this.scene.add(this.mirrorBox);
+
 	      // 
 	      this.addGrassyField();
 	    }
@@ -6969,21 +6994,21 @@ var svv =
 	      var t = +new Date() / 200.0 / 1.0;
 	      var f = Math.PI / 4.0;
 	      var r = 90;
-	      f = t / 100.0;
+	      f = t / 10000.0;
 	      var x = r * Math.cos(f);
 	      var z = r * Math.sin(f);
 	      var y = params.y;
 
 	      // ...
-	      var a = x,
+	      var a = 100,
 	          b = y,
-	          c = z;
+	          c = 100;
 
 	      // ...
 
 	      var TWOPI = 2 * Math.PI;
 	      var theta = f % 2 * Math.PI;
-	      this.sky.setRotationFromAxisAngle(this.skyAxis, 0.0);
+	      this.sky.sky.setRotationFromAxisAngle(this.skyAxis, theta);
 
 	      // ...
 	      this.camera.position.set(a, b, c);
@@ -6995,7 +7020,10 @@ var svv =
 	      // this.camera.lookAt(pos);
 
 	      // Move skybox around camera position
-	      this.sky.position.set(this.camera.position.x, this.camera.position.y, this.camera.position.z);
+	      this.sky.sky.position.set(this.camera.position.x, this.camera.position.y, this.camera.position.z);
+
+	      this.cubeCamera.position.copy(this.mirrorBox.position);
+	      this.cubeCamera.update(this.renderer, this.scene);
 	    }
 	  }, {
 	    key: 'setupCamera',
@@ -7049,6 +7077,9 @@ var svv =
 	var _slicedToArray = function () { function sliceIterator(arr, i) { var _arr = []; var _n = true; var _d = false; var _e = undefined; try { for (var _i = arr[Symbol.iterator](), _s; !(_n = (_s = _i.next()).done); _n = true) { _arr.push(_s.value); if (i && _arr.length === i) break; } } catch (err) { _d = true; _e = err; } finally { try { if (!_n && _i["return"]) _i["return"](); } finally { if (_d) throw _e; } } return _arr; } return function (arr, i) { if (Array.isArray(arr)) { return arr; } else if (Symbol.iterator in Object(arr)) { return sliceIterator(arr, i); } else { throw new TypeError("Invalid attempt to destructure non-iterable instance"); } }; }();
 
 	exports.sky = sky;
+
+	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
 	var vert = __webpack_require__(46);
 	var frag = __webpack_require__(47);
 
@@ -7229,6 +7260,15 @@ var svv =
 
 	  return faceMaterials;
 	}
+
+	var StarrySky = exports.StarrySky = function StarrySky(stars, boxSize) {
+	  _classCallCheck(this, StarrySky);
+
+	  this.stars = stars;
+	  var size = Math.floor(3 * boxSize);
+	  this.sky = sky(stars, boxSize);
+	  this.textures = skyTextures(stars, size, size);
+	};
 
 /***/ }),
 /* 46 */
@@ -8879,6 +8919,12 @@ var svv =
 
 	  return SubtitleScript;
 	}();
+
+/***/ }),
+/* 63 */
+/***/ (function(module, exports) {
+
+	"use strict";
 
 /***/ })
 /******/ ]);
